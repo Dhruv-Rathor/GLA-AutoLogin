@@ -19,13 +19,11 @@
             android:exported="true"
             android:launchMode="singleTop">
 
-            <!-- Normal App Launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Official Android Captive Portal Handler Intent -->
             <intent-filter>
                 <action android:name="android.net.conn.CAPTIVE_PORTAL_SIGN_IN" />
                 <category android:name="android.intent.category.DEFAULT" />

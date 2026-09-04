@@ -21,65 +21,48 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
-      - name: Find Android project
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.3'
+
+      - name: Fix Windows Encoding
         shell: bash
         run: |
           set -e
-
-          if [ -d "GLAAutoLogin" ]; then
-            echo "PROJECT_DIR=GLAAutoLogin" >> "$GITHUB_ENV"
-          else
-            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
-          fi
-
-      - name: Fix text encoding
-        shell: bash
-        run: |
-          set -e
-          cd "$PROJECT_DIR"
 
           find . -type f \( \
-            -name "*.java" -o \
-            -name "*.gradle" -o \
-            -name "*.gradle.kts" -o \
-            -name "*.xml" \
+            -name "*.java" \
+            -o -name "*.gradle" \
+            -o -name "*.gradle.kts" \
+            -o -name "*.xml" \
           \) -print0 |
           while IFS= read -r -d '' file; do
             if file "$file" | grep -q "UTF-16"; then
-              echo "Converting: $file"
+              echo "Converting UTF-16: $file"
               iconv -f UTF-16 -t UTF-8 "$file" > "$file.tmp"
               mv "$file.tmp" "$file"
             fi
           done
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+      - name: Generate Gradle Wrapper
+        shell: bash
+        run: |
+          gradle wrapper --gradle-version 8.3
+          chmod +x ./gradlew
 
       - name: Build Debug APK
         shell: bash
         run: |
-          set -e
-          cd "$PROJECT_DIR"
-
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew clean assembleDebug --stacktrace --no-daemon
-          else
-            echo "gradlew not found. Installing Gradle..."
-            sudo apt-get update
-            sudo apt-get install -y gradle
-            gradle wrapper --gradle-version 8.3
-            chmod +x ./gradlew
-            ./gradlew clean assembleDebug --stacktrace --no-daemon
-          fi
+          ./gradlew clean assembleDebug \
+            --stacktrace \
+            --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AutoLogin-APK
-          path: |
-            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 ```

@@ -1,41 +1,85 @@
+```yaml
 name: Build Android APK
+
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
+          cache: gradle
 
-      - name: Fix Windows Encoding & Build APK
+      - name: Find Android project
+        shell: bash
         run: |
-          # 1. Move into the project folder if it exists
-          if [ -d "GLAAutoLogin" ]; then cd GLAAutoLogin; fi
-          
-          # 2. Convert PowerShell UTF-16 files to standard UTF-8
-          find . -type f \( -name "*.java" -o -name "*.gradle" -o -name "*.xml" \) | while read file; do
+          set -e
+
+          if [ -d "GLAAutoLogin" ]; then
+            echo "PROJECT_DIR=GLAAutoLogin" >> "$GITHUB_ENV"
+          else
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          fi
+
+      - name: Fix text encoding
+        shell: bash
+        run: |
+          set -e
+          cd "$PROJECT_DIR"
+
+          find . -type f \( \
+            -name "*.java" -o \
+            -name "*.gradle" -o \
+            -name "*.gradle.kts" -o \
+            -name "*.xml" \
+          \) -print0 |
+          while IFS= read -r -d '' file; do
             if file "$file" | grep -q "UTF-16"; then
-              iconv -f UTF-16 -t UTF-8 "$file" -o "$file.tmp" && mv "$file.tmp" "$file"
+              echo "Converting: $file"
+              iconv -f UTF-16 -t UTF-8 "$file" > "$file.tmp"
+              mv "$file.tmp" "$file"
             fi
           done
-          
-          # 3. Generate the build wrapper and compile the APK
-          gradle wrapper --gradle-version 8.3
-          chmod +x ./gradlew
-          ./gradlew assembleDebug
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Build Debug APK
+        shell: bash
+        run: |
+          set -e
+          cd "$PROJECT_DIR"
+
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew clean assembleDebug --stacktrace --no-daemon
+          else
+            echo "gradlew not found. Installing Gradle..."
+            sudo apt-get update
+            sudo apt-get install -y gradle
+            gradle wrapper --gradle-version 8.3
+            chmod +x ./gradlew
+            ./gradlew clean assembleDebug --stacktrace --no-daemon
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AutoLogin-APK
-          path: '**/app/build/outputs/apk/debug/*.apk'
+          path: |
+            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+```

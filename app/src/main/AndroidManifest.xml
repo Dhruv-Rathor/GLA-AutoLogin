@@ -5,18 +5,37 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- ADD THIS LINE -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <application
         android:allowBackup="true"
         android:label="GLA AutoLogin"
         android:theme="@android:style/Theme.NoDisplay">
+        
         <activity android:name=".MainActivity" android:exported="true">
+            <!-- Normal App Icon Launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            
+            <!-- Intercept Captive Portal Network Prompts -->
+            <intent-filter>
+                <action android:name="android.net.conn.CAPTIVE_PORTAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Intercept Browser Redirects (Replaces Chrome) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="captive.onlinegla.com" />
+            </intent-filter>
         </activity>
+
         <service
             android:name=".AutoLoginService"
             android:enabled="true"

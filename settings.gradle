@@ -1,0 +1,2 @@
+rootProject.name = 'GLA AutoLogin'
+include ':app'

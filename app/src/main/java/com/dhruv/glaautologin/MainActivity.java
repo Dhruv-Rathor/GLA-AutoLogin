@@ -12,14 +12,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // 1. Request Notification Permission for Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
 
-        // 2. Start the Background AutoLogin Service
         Intent serviceIntent = new Intent(this, AutoLoginService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
@@ -27,13 +25,13 @@ public class MainActivity extends Activity {
             startService(serviceIntent);
         }
 
-        // 3. Show a toast if triggered by the network notification
         Intent intent = getIntent();
         if (intent != null && (Intent.ACTION_VIEW.equals(intent.getAction()) || "android.net.conn.CAPTIVE_PORTAL".equals(intent.getAction()))) {
-            Toast.makeText(this, "GLA Network: Authenticating...", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "GLA AutoLogin: Authenticating portal...", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "GLA AutoLogin is running in the background", Toast.LENGTH_SHORT).show();
         }
         
-        // 4. Immediately close the UI so it stays invisible
-        finish();
+        finish(); // Intentionally hides the UI
     }
 }

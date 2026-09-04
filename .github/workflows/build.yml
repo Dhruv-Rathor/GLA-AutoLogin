@@ -11,34 +11,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Java 17 (Updated to v5)
+      - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Find Project, Fix Encoding, and Build
+      - name: Fix Windows Encoding & Build APK
         run: |
-          # 1. If the 'GLAAutoLogin' folder itself was uploaded, move inside it
-          if [ -d "GLAAutoLogin" ] && [ -f "GLAAutoLogin/build.gradle" ]; then
-            cd GLAAutoLogin
-          fi
+          # 1. Move into the project folder if it exists
+          if [ -d "GLAAutoLogin" ]; then cd GLAAutoLogin; fi
           
-          # 2. Fix potential UTF-16 encoding issues caused by Windows PowerShell
-          find . -type f -name "*.java" -o -name "*.gradle" -o -name "*.xml" | while read -r file; do
+          # 2. Convert PowerShell UTF-16 files to standard UTF-8
+          find . -type f \( -name "*.java" -o -name "*.gradle" -o -name "*.xml" \) | while read file; do
             if file "$file" | grep -q "UTF-16"; then
               iconv -f UTF-16 -t UTF-8 "$file" -o "$file.tmp" && mv "$file.tmp" "$file"
             fi
           done
-
-          # 3. Generate a dedicated Gradle Wrapper
-          echo "Generating Gradle wrapper..."
-          gradle wrapper --gradle-version 8.3
           
-          # 4. Build the APK with detailed error logging enabled
-          echo "Building APK..."
+          # 3. Generate the build wrapper and compile the APK
+          gradle wrapper --gradle-version 8.3
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

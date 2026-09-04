@@ -18,7 +18,7 @@ public class AutoLoginService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        client = getUnsafeOkHttpClient(); // Use the SSL bypass client
+        client = getUnsafeOkHttpClient(); 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel("AutoLoginChannel", "Auto Login Service", NotificationManager.IMPORTANCE_LOW);
@@ -37,7 +37,13 @@ public class AutoLoginService extends Service {
         registerNetworkCallback();
     }
 
-    // This bypasses the Fortinet SSL Certificate rejection
+    // Force authentication whenever the app is triggered
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        authenticate(); 
+        return START_STICKY;
+    }
+
     private OkHttpClient getUnsafeOkHttpClient() {
         try {
             final TrustManager[] trustAllCerts = new TrustManager[]{
